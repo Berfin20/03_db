@@ -1,5 +1,5 @@
 create table if not exists sports_club (
-    idClub varchar(50) not null primary key,
+    clubId varchar(50) not null primary key,
     clubName varchar(45) not null,
     streetName varchar(45) not null,
     postalCode int not null,
@@ -20,19 +20,20 @@ create table if not exists age_group (
     primary key (id)
 );;
 
-create table if not exists member (
+create table if not exists person (
+    email varchar(70) not null,
     firstName varchar(45) not null,
     lastName varchar(45) not null,
     gender char(1) not null,
     birthday int not null,
-    email varchar(70) not null,
-    phoneNumber int not null,
+    #phoneNumber int not null,
     isContestant bit not null,
     primary key (firstName, lastName, gender, birthday, email),
     constraint email unique (email)
 );;
 
 create table if not exists event_type (
+    eventTypeId varchar (10) not null,
     name varchar(45) not null,
     age_group int not null,
     primary key (name, age_group),
@@ -59,20 +60,20 @@ create table if not exists result (
 );;
 
 create table if not exists registration (
-    email varchar(70) not null,
-    firstName varchar(45) not null,
-    lastName varchar(45) not null,
-    gender char(1) not null,
-    birthday int not null,
+    #email varchar(70) not null,
+    #firstName varchar(45) not null,
+    #lastName varchar(45) not null,
+    #gender char(1) not null,
+    #birthday int not null,
 #     ageGroup int not null,
-    clubName varchar(50) not null,
+    clubId varchar(50) not null,
     eventType varchar(45) not null,
     date DATE not null,
 #     startingNumber int not null,
 #     result int
-primary key (email, clubName, eventType, date),
+primary key (email, clubId, eventType, date),
 foreign key (email, firstName, lastName, gender, birthday) REFERENCES member (email, firstName, lastName, gender, birthday),
-foreign key (clubName) REFERENCES sports_club (clubName),
+foreign key (clubId) REFERENCES sports_club (clubId),
 foreign key (eventType, date) REFERENCES event (eventType, date)
 );;
 
