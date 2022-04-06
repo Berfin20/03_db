@@ -1,7 +1,9 @@
 import java.io.IOException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Random;
 
 public class DatabaseSystem {
     private Connector connector;
@@ -17,11 +19,32 @@ public class DatabaseSystem {
             readCSV();
             for (PersonOgTilmelding personOgTilmelding : personerOgTilmeldinger) {
                 String email = personOgTilmelding.getPerson().getEmail();
-                if(!personExistsInDB(email)){
+                if(!personExistsInDB(email) && !contestantExistsInDB(email)){
                     createPersonInDB(personOgTilmelding);
+                } else if (personExistsInDB(email) && !contestantExistsInDB(email) ) {
+                    updatePersonInDB(personOgTilmelding, email);
                 }
-                updatePersonInDB(personOgTilmelding, email);
+                else if (personExistsInDB(email) && contestantExistsInDB(email)){
+                    updatePersonInDB(personOgTilmelding, email);
+                    if (isContestant(email)) {updateContestantInDB(personOgTilmelding, email);}
+                    else {deleteContestant(email);}
+
+                }
             }
+            connector.getConnection().commit();
+            connector.getConnection().setAutoCommit(true);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteContestant(String email) {
+        try {
+            PreparedStatement st = connector.getConnection().prepareStatement("DELETE FROM contestant WHERE contestantEmail =  ?");
+            st.setString(1,email);
+            st.executeUpdate();
+
             connector.getConnection().commit();
             connector.getConnection().setAutoCommit(true);
 
@@ -62,6 +85,47 @@ public class DatabaseSystem {
         return false;
     }
 
+    public boolean contestantExistsInDB(String email){
+        try {
+            PreparedStatement stmt = connector.getConnection().prepareStatement("SELECT * FROM contestant WHERE contestantEmail = ?");
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                if (email.equals(rs.getString("contestantEmail"))){
+                    return true;
+                }
+            }
+            connector.getConnection().commit();
+            connector.getConnection().setAutoCommit(true);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean isContestant(String email){
+        try {
+            PreparedStatement stmt = connector.getConnection().prepareStatement("SELECT * FROM person WHERE email = ?");
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                if (email.equals(rs.getString("email"))){
+                    if (rs.getBoolean("isContestant"))
+                    return true;
+                }
+            }
+            connector.getConnection().commit();
+            connector.getConnection().setAutoCommit(true);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 
     public void createPersonInDB(PersonOgTilmelding personOgTilmelding){
         try {
@@ -91,11 +155,13 @@ public class DatabaseSystem {
 
     public void createContestantsInDB (PersonOgTilmelding personOgTilmelding){
         try {
-            PreparedStatement ps = connector.getConnection().prepareStatement("INSERT INTO contestant(contestantEmail, startingNumber, time) VALUES (?, ?, ?)");
+            PreparedStatement ps = connector.getConnection().prepareStatement("INSERT INTO contestant(contestantEmail, startingNumber, time, event) VALUES (?, ?, ?, ?)");
             if(personOgTilmelding.getTilmelding() != null) {
-                ps.setString(1,personOgTilmelding.getPerson().getEmail());
-                ps.setInt(2, Integer.parseInt(personOgTilmelding.getPerson().getEmail().substring(4, personOgTilmelding.getPerson().getEmail().lastIndexOf('@'))));
-                ps.setNull(3,-1);
+                String email = personOgTilmelding.getPerson().getEmail();
+                ps.setString(1,email);
+                ps.setInt(2, createStartingNumber(email));
+                ps.setString(3,createRandomTime());
+                ps.setString(4, personOgTilmelding.getTilmelding().getEventTypeId());
                 ps.execute();
             }
             connector.getConnection().commit();
@@ -103,6 +169,21 @@ public class DatabaseSystem {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public int createStartingNumber (String email) {
+        int startingNumber = Integer.parseInt(email.substring(4, email.lastIndexOf('@')));
+     return startingNumber;
+    }
+
+    public String createRandomTime () {
+        final Random random = new Random();
+
+        SimpleDateFormat sdf = new SimpleDateFormat("00:mm:ss");
+
+        Date time = new Date(random.nextLong());
+
+        return sdf.format(time);
     }
 
     public  void updateIsContestant(PersonOgTilmelding personOgTilmelding, String email) {
@@ -117,6 +198,22 @@ public class DatabaseSystem {
                 stmt.setInt(1,0);
             }
             stmt.execute();
+        }
+        catch(SQLException ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public  void updateContestantInDB(PersonOgTilmelding personOgTilmelding, String email) {
+        try {
+            readCSV();
+            PreparedStatement stmt = connector.getConnection().prepareStatement("UPDATE contestant SET startingNumber=?, time=?, event = ? WHERE contestantEmail = ?");
+            stmt.setString(4, email);
+            stmt.setInt(1, createStartingNumber(email));
+            stmt.setString(2,createRandomTime());
+            stmt.setString(3, personOgTilmelding.getTilmelding().getEventTypeId());
+            stmt.execute();
+            updateIsContestant(personOgTilmelding, personOgTilmelding.getPerson().getEmail());
         }
         catch(SQLException ex){
             ex.printStackTrace();
