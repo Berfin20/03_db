@@ -1,53 +1,153 @@
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 public class DatabaseSystem {
     private Connector connector;
+    List<PersonOgTilmelding> personerOgTilmeldinger;
+    IndlaesPersonerOgTilmeldinger laeser;
+
     DatabaseSystem(Connector connector){
         this.connector = connector;
     }
 
+    public void CSVToDB(){
+        try {
+            PreparedStatement stmt = connector.getConnection().prepareStatement("SELECT * FROM person");
+            ResultSet rs = stmt.executeQuery();
 
-    public void insertPersonInDB(List<PersonOgTilmelding> poaliste) throws SQLException {
-            Connection connection = connector.getConnection();
-                connection.setAutoCommit(false);
-            try {
-            PreparedStatement ps = connector.getConnection().prepareStatement("INSERT INTO person(email, firstName, lastName, gender, birthday, isContestant) VALUES (?, ?, ?, ?, ?, ?)");
-            IndlaesPersonerOgTilmeldinger laeser = new IndlaesPersonerOgTilmeldinger();
-                List<PersonOgTilmelding> personerOgTilmeldinger = null;
-                try {
-                    personerOgTilmeldinger = laeser.indlaesPersonerOgTilmeldinger("/Users/payammadani/Documents/GitHub/09_del1/03_db/src/main/resources/tilmeldinger.csv");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                for(PersonOgTilmelding personOgTilmelding : personerOgTilmeldinger) {
-                        System.out.print("Person: " +personOgTilmelding.getPerson());
-                        ps.setString(1,personOgTilmelding.getPerson().getEmail());
-                        ps.setString(2,personOgTilmelding.getPerson().getFornavn());
-                        ps.setString(3,personOgTilmelding.getPerson().getEfternavn());
-                        ps.setString(4,personOgTilmelding.getPerson().getKoen());
-                        ps.setDate(5, (Date) personOgTilmelding.getPerson().getFoedselsdato());
-                        ps.setInt(6,0);
-
-
-
-
-
-
-                    if(personOgTilmelding.getTilmelding() != null)
-                            System.out.println("\tTilmelding: " +personOgTilmelding.getTilmelding());
-                        else
-                            System.out.println("\t Ingen tilhørende tilmelding");
+            readCSV();
+            for (PersonOgTilmelding personOgTilmelding : personerOgTilmeldinger) {
+                if (rs.next()) {
+                    if (personExistsInDB() == true) {
+                        String email = personOgTilmelding.getPerson().getEmail();
+                        updatePersonInDB(personOgTilmelding, email);
                     }
-                connection.commit();
-                connection.setAutoCommit(true);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+                } if(personExistsInDB() == false){
+                    createPeopleInDB(personOgTilmelding);
 
+                }
+            }
+            connector.getConnection().commit();
+            connector.getConnection().setAutoCommit(true);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
+
+    public  void readCSV(){
+        laeser = new IndlaesPersonerOgTilmeldinger();
+        personerOgTilmeldinger = null;
+
+        try {
+            personerOgTilmeldinger = laeser.indlaesPersonerOgTilmeldinger("src/main/resources/tilmeldinger.csv");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean personExistsInDB(){
+        try {
+            PreparedStatement stmt = connector.getConnection().prepareStatement("SELECT * FROM person");
+            ResultSet rs = stmt.executeQuery();
+
+            readCSV();
+            for (PersonOgTilmelding personOgTilmelding : personerOgTilmeldinger) {
+                if (rs.next()) {
+                    if (personOgTilmelding.getPerson().getEmail().equals(rs.getString(1))) return true;
+                }
+            }
+            connector.getConnection().commit();
+            connector.getConnection().setAutoCommit(true);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+    public void createPeopleInDB(PersonOgTilmelding personOgTilmelding){
+        try {
+            PreparedStatement ps = connector.getConnection().prepareStatement("INSERT INTO person(email, firstName, lastName, phoneNumber, streetName, postalCode, city, birthday, gender, isContestant) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?)");
+                    ps.setString(1, personOgTilmelding.getPerson().getEmail());
+                    ps.setString(2, personOgTilmelding.getPerson().getFornavn());
+                    ps.setString(3, personOgTilmelding.getPerson().getEfternavn());
+                    ps.setString(4, null);
+                    ps.setString(5, null);
+                    ps.setString(6, null);
+                    ps.setString(7, null);
+                    String birthdate = (new SimpleDateFormat("yyyyMMdd").format(personOgTilmelding.getPerson().getFoedselsdato()));
+                    ps.setString(8, birthdate);
+                    ps.setString(9, personOgTilmelding.getPerson().getKoen());
+                    ps.setInt(10, 0);
+                    ps.execute();
+                    createContestantsInDB(personOgTilmelding);
+                    updateIsContestant(personOgTilmelding, personOgTilmelding.getPerson().getEmail());
+
+            connector.getConnection().commit();
+            connector.getConnection().setAutoCommit(true);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void createContestantsInDB (PersonOgTilmelding personOgTilmelding){
+        try {
+            PreparedStatement ps = connector.getConnection().prepareStatement("INSERT INTO contestant(contestantEmail, startingNumber, time) VALUES (?, ?, ?)");
+            if(personOgTilmelding.getTilmelding() != null) {
+                ps.setString(1,personOgTilmelding.getPerson().getEmail());
+                ps.setInt(2, Integer.parseInt(personOgTilmelding.getPerson().getEmail().substring(4, personOgTilmelding.getPerson().getEmail().lastIndexOf('@'))));
+                ps.setNull(3,-1);
+                ps.execute();
+            }
+            connector.getConnection().commit();
+            connector.getConnection().setAutoCommit(true);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public  void updateIsContestant(PersonOgTilmelding personOgTilmelding, String email) {
+        try {
+            PreparedStatement stmt = connector.getConnection().prepareStatement("UPDATE person SET isContestant = ? WHERE email = ?");
+            if (personOgTilmelding.getTilmelding() != null) {
+                stmt.setString(2, email);
+                stmt.setInt(1, 1);
+            }
+            else {
+                stmt.setString(2, email);
+                stmt.setInt(1,0);
+            }
+            stmt.execute();
+        }
+        catch(SQLException ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public  void updatePersonInDB(PersonOgTilmelding personOgTilmelding, String email) {
+        try {
+            PreparedStatement stmt = connector.getConnection().prepareStatement("UPDATE person SET firstName = ?, lastName =?, phoneNumber =?, streetName =?, postalCode=?, city=?, birthday=?, gender=?,isContestant=? WHERE email = ?");
+                stmt.setString(10, email);
+                stmt.setString(1, personOgTilmelding.getPerson().getFornavn());
+                stmt.setString(2, personOgTilmelding.getPerson().getEfternavn());
+                stmt.setString(3, null);
+                stmt.setString(4, null);
+                stmt.setString(5, null);
+                stmt.setString(6, null);
+                String birthdate = (new SimpleDateFormat("yyyyMMdd").format(personOgTilmelding.getPerson().getFoedselsdato()));
+                stmt.setString(7, birthdate);
+                stmt.setString(8, personOgTilmelding.getPerson().getKoen());
+                stmt.setInt(9, 0);
+                stmt.execute();
+                updateIsContestant(personOgTilmelding, personOgTilmelding.getPerson().getEmail());
+        }
+        catch(SQLException ex){
+            ex.printStackTrace();
+        }
+    }
+}
