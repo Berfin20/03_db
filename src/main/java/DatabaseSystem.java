@@ -14,20 +14,13 @@ public class DatabaseSystem {
 
     public void CSVToDB(){
         try {
-            PreparedStatement stmt = connector.getConnection().prepareStatement("SELECT * FROM person");
-            ResultSet rs = stmt.executeQuery();
-
             readCSV();
             for (PersonOgTilmelding personOgTilmelding : personerOgTilmeldinger) {
-                if (rs.next()) {
-                    if (personExistsInDB() == true) {
-                        String email = personOgTilmelding.getPerson().getEmail();
-                        updatePersonInDB(personOgTilmelding, email);
-                    }
-                } if(personExistsInDB() == false){
-                    createPeopleInDB(personOgTilmelding);
-
+                String email = personOgTilmelding.getPerson().getEmail();
+                if(!personExistsInDB(email)){
+                    createPersonInDB(personOgTilmelding);
                 }
+                updatePersonInDB(personOgTilmelding, email);
             }
             connector.getConnection().commit();
             connector.getConnection().setAutoCommit(true);
@@ -48,16 +41,17 @@ public class DatabaseSystem {
         }
     }
 
-    public boolean personExistsInDB(){
+    public boolean personExistsInDB(String email){
         try {
-            PreparedStatement stmt = connector.getConnection().prepareStatement("SELECT * FROM person");
+            PreparedStatement stmt = connector.getConnection().prepareStatement("SELECT * FROM person WHERE email = ?");
+            stmt.setString(1,email);
             ResultSet rs = stmt.executeQuery();
 
             readCSV();
-            for (PersonOgTilmelding personOgTilmelding : personerOgTilmeldinger) {
                 if (rs.next()) {
-                    if (personOgTilmelding.getPerson().getEmail().equals(rs.getString(1))) return true;
-                }
+                    if (email.equals(rs.getString("email"))){
+                        return true;
+                    }
             }
             connector.getConnection().commit();
             connector.getConnection().setAutoCommit(true);
@@ -69,7 +63,7 @@ public class DatabaseSystem {
     }
 
 
-    public void createPeopleInDB(PersonOgTilmelding personOgTilmelding){
+    public void createPersonInDB(PersonOgTilmelding personOgTilmelding){
         try {
             PreparedStatement ps = connector.getConnection().prepareStatement("INSERT INTO person(email, firstName, lastName, phoneNumber, streetName, postalCode, city, birthday, gender, isContestant) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?)");
                     ps.setString(1, personOgTilmelding.getPerson().getEmail());
