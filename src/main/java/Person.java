@@ -7,13 +7,21 @@ public class Person {
     private final String efternavn;
     private final String koen;
     private final Date foedselsdato;
+    private final int tlf;
+    private final int husnummer;
+    private final String vejnavn;
+    private final int postnummer;
 
-    public Person(String email, String fornavn, String efternavn, String koen, Date foedselsdato) {
+    public Person(String email, String fornavn, String efternavn, String koen, Date foedselsdato, int tlf, int husnummer, String vejnavn, int postnummer) {
         this.email = email;
         this.fornavn = fornavn;
         this.efternavn = efternavn;
         this.koen = koen;
         this.foedselsdato = foedselsdato;
+        this.tlf = tlf;
+        this.husnummer = husnummer;
+        this.vejnavn = vejnavn;
+        this.postnummer = postnummer;
     }
 
     public String getEmail() {
@@ -36,7 +44,21 @@ public class Person {
         return foedselsdato;
     }
 
+    public int getTlf() {
+        return tlf;
+    }
 
+    public int getHusnummer() {
+        return husnummer;
+    }
+
+    public int getPostnummer() {
+        return postnummer;
+    }
+
+    public String getVejnavn() {
+        return vejnavn;
+    }
 
     @Override
     public String toString() {

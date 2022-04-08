@@ -134,10 +134,10 @@ public class DatabaseSystem {
             ps.setString(1, personOgTilmelding.getPerson().getEmail());
             ps.setString(2, personOgTilmelding.getPerson().getFornavn());
             ps.setString(3, personOgTilmelding.getPerson().getEfternavn());
-            ps.setString(4, null);
-            ps.setString(5, null);
-            ps.setString(6, null);
-            ps.setString(7, null);
+            ps.setInt(4, personOgTilmelding.getPerson().getTlf());
+            ps.setInt(5, personOgTilmelding.getPerson().getHusnummer());
+            ps.setString(6, personOgTilmelding.getPerson().getVejnavn());
+            ps.setInt(7, personOgTilmelding.getPerson().getPostnummer());
             String birthdate = (new SimpleDateFormat("yyyyMMdd").format(personOgTilmelding.getPerson().getFoedselsdato()));
             ps.setString(8, birthdate);
             ps.setString(9, personOgTilmelding.getPerson().getKoen());
@@ -259,17 +259,18 @@ public class DatabaseSystem {
 
     public  void updatePersonInDB(PersonOgTilmelding personOgTilmelding, String email) {
         try {
-            PreparedStatement stmt = connector.getConnection().prepareStatement("UPDATE person SET firstName = ?, lastName =?, phoneNumber =?, streetName =?, postalCode=?, birthday=?, gender=?,isContestant=? WHERE email = ?");
-                stmt.setString(9, email);
+            PreparedStatement stmt = connector.getConnection().prepareStatement("UPDATE person SET firstName = ?, lastName =?, phoneNumber =?,houseNumber =?, streetName =?, postalCode=?, birthday=?, gender=?,isContestant=? WHERE email = ?");
+                stmt.setString(10, email);
                 stmt.setString(1, personOgTilmelding.getPerson().getFornavn());
                 stmt.setString(2, personOgTilmelding.getPerson().getEfternavn());
-                stmt.setString(3, null);
-                stmt.setString(4, null);
-                stmt.setString(5, null);
+                stmt.setInt(3, personOgTilmelding.getPerson().getTlf());
+                stmt.setInt(4, personOgTilmelding.getPerson().getHusnummer());
+                stmt.setString(5, personOgTilmelding.getPerson().getVejnavn());
+                stmt.setInt(6,personOgTilmelding.getPerson().getPostnummer());
                 String birthdate = (new SimpleDateFormat("yyyyMMdd").format(personOgTilmelding.getPerson().getFoedselsdato()));
-                stmt.setString(6, birthdate);
-                stmt.setString(7, personOgTilmelding.getPerson().getKoen());
-                stmt.setInt(8, 0);
+                stmt.setString(7, birthdate);
+                stmt.setString(8, personOgTilmelding.getPerson().getKoen());
+                stmt.setInt(9, 0);
                 stmt.execute();
                 updateIsContestant(personOgTilmelding, personOgTilmelding.getPerson().getEmail());
         }

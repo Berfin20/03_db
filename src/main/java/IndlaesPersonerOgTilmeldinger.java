@@ -23,7 +23,7 @@ public class IndlaesPersonerOgTilmeldinger {
 
 	public static final String SEMICOLON_DELIMITER = ";";
 	public static final String COMMA_DELIMITER = ",";
-	private static final int NUMBER_OF_FIELDS_EXPECTED = 8;
+	private static final int NUMBER_OF_FIELDS_EXPECTED = 12;
 	private final String delimiter = SEMICOLON_DELIMITER;
 	SimpleDateFormat dateParser = new SimpleDateFormat("yyyyMMdd");
 
@@ -52,7 +52,7 @@ public class IndlaesPersonerOgTilmeldinger {
 		    	    }
 					if(values.size() == 0)
 						continue;
-					if(values.size() == 7 || values.size() == 8) {
+					if(values.size() == 11 || values.size() == 12) {
 						String email = values.get(0);
 						String fornavn = values.get(1);
 						String efternavn = values.get(2);
@@ -63,18 +63,21 @@ public class IndlaesPersonerOgTilmeldinger {
 						} catch (ParseException e) {
 							throw new NumberFormatException("Ugyldig værdi (" + values.get(4) + ") for fødselsdato på linie " + lineNbr);
 						}
-
-						String foreningsId = values.get(5).trim().length() > 0 ? values.get(5).trim() : null;
-						String eventTypeId = values.get(6).trim().length() > 0 ? values.get(6).trim() : null;
+						int tlf = Integer.parseInt(values.get(5));
+						int husnummer = Integer.parseInt(values.get(6));
+						String vejnavn = values.get(7);
+						int postnummer = Integer.parseInt(values.get(8));
+						String foreningsId = values.get(9).trim().length() > 0 ? values.get(9).trim() : null;
+						String eventTypeId = values.get(10).trim().length() > 0 ? values.get(10).trim() : null;
 						Date eventDato = null;
-						if (values.size() == 8 && values.get(7) != null && values.get(7).trim().length() > 0)
+						if (values.size() == 12 && values.get(11) != null && values.get(11).trim().length() > 0)
 							try {
-								eventDato = dateParser.parse(values.get(7));
+								eventDato = dateParser.parse(values.get(11));
 							} catch (ParseException e) {
-								throw new NumberFormatException("Ugyldig værdi (" + values.get(7) + ") for event dato på linie " + lineNbr);
+								throw new NumberFormatException("Ugyldig værdi (" + values.get(10) + ") for event dato på linie " + lineNbr);
 							}
 
-						PersonOgTilmelding poa = new PersonOgTilmelding(email, fornavn, efternavn, koen, foedselsdato, foreningsId, eventTypeId, eventDato);
+						PersonOgTilmelding poa = new PersonOgTilmelding(email, fornavn, efternavn, koen, foedselsdato,tlf,husnummer, postnummer,vejnavn, foreningsId, eventTypeId, eventDato);
 						poaList.add(poa);
 					} else
 						throw new IOException("Ugyldigt antal værdier på linie " +lineNbr +". Forventede " +NUMBER_OF_FIELDS_EXPECTED +" værdier, læste " +values.size());

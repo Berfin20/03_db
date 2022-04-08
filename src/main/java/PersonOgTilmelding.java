@@ -13,8 +13,8 @@ public class PersonOgTilmelding {
 	private final Person person;
 	private final Tilmelding tilmelding;
 
-	public PersonOgTilmelding(String email, String fornavn, String efternavn, String koen, Date foedselsdato, String foreningsId, String eventTypeId, Date eventDato) {
-		person = new Person(email, fornavn, efternavn, koen, foedselsdato);
+	public PersonOgTilmelding(String email, String fornavn, String efternavn, String koen, Date foedselsdato,int tlf,int husnummer, int postnummer, String vejnavn, String foreningsId, String eventTypeId, Date eventDato) {
+		person = new Person(email, fornavn, efternavn, koen, foedselsdato, tlf, husnummer, vejnavn, postnummer);
 		if(foreningsId != null || eventTypeId != null || eventDato != null)
 			tilmelding = new Tilmelding(foreningsId, eventTypeId, eventDato);
 		else
